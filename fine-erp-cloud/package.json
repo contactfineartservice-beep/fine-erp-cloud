@@ -1,0 +1,34 @@
+{
+  "name": "fine-erp-cloud",
+  "version": "1.0.0",
+  "description": "Fine ERP Cloud - Gestão e Contabilidade Moçambique",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [
+    "erp",
+    "accounting",
+    "pos",
+    "mozambique"
+  ],
+  "author": "Xavier Moises",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0"
+  },
+  "build": {
+    "appId": "com.fineerp.cloud",
+    "productName": "Fine ERP Cloud",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/logo.png"
+    }
+  }
+}

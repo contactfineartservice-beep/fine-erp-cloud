@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fine ERP Cloud - Gestão, Finanças e Contabilidade em Moçambique</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  
+  <!-- CSS Styling -->
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Lucide Icons & Chart.js CDNs -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Core Application Scripts -->
+  <script src="js/database.js" defer></script>
+  <script src="js/audit.js" defer></script>
+  <script src="js/cashRegister.js" defer></script>
+  <script src="js/ai.js" defer></script>
+  <script src="js/documents.js" defer></script>
+  <script src="js/accounting.js" defer></script>
+  <script src="js/app.js" defer></script>
+  
+  <!-- Register PWA Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then((reg) => console.log('Service Worker registered.', reg.scope))
+          .catch((err) => console.warn('Service Worker registration failed.', err));
+      });
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Login Overlay Screen -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-box">
+      <div style="text-align: center; margin-bottom: 25px;">
+        <img src="assets/logo.png" alt="Fine ERP Cloud Logo" style="height: 60px; object-fit: contain; margin-bottom: 10px;">
+        <p style="color: var(--text-muted); font-size: 13px;">Tudo o que a sua empresa precisa para gerir vendas, finanças, estoque e contabilidade num só lugar.</p>
+      </div>
+
+      <div id="login-step-1">
+        <div class="form-group" style="margin-bottom: 15px;">
+          <span class="form-label">Utilizador / Operador</span>
+          <select id="login-username" class="form-input">
+            <option value="admin">Xavier Moises (Administrador)</option>
+            <option value="caixa1">Maria Estevão (Caixa)</option>
+            <option value="conta1">João Carlos (Contabilista)</option>
+            <option value="gerente1">Sulemane Issa (Gerente)</option>
+            <option value="vendedor1">Adilson Macuácua (Vendedor)</option>
+            <option value="auditor1">Clara Matusse (Auditor)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <span class="form-label">Senha de Acesso</span>
+          <input type="password" id="login-password" class="form-input" value="86428642" placeholder="Senha (ex: 86428642)">
+        </div>
+        <button class="btn" style="width: 100%; height: 42px;" onclick="solicitar2FA()">Iniciar Sessão</button>
+      </div>
+
+      <div id="login-step-2" style="display: none;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <h4 style="font-family: 'Outfit'; margin-bottom: 5px;">Verificação de Segurança 2FA</h4>
+          <p style="color: var(--text-muted); font-size: 11px;">Insira o código de autenticação gerado na sua aplicação ou SMS.</p>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <span class="form-label">Token de Segurança (OTP)</span>
+          <input type="text" id="login-otp" class="form-input" placeholder="Ex: 884930" style="text-align: center; letter-spacing: 5px; font-weight: bold; font-size: 18px;">
+        </div>
+        <button class="btn btn-success" style="width: 100%; height: 42px;" onclick="validarLoginCompleto()">Verificar & Entrar</button>
+        <button class="btn btn-secondary" style="width: 100%; height: 42px; margin-top: 10px;" onclick="voltarPasso1()">Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-container" style="display: none;">
+    
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-section" style="padding-bottom: 15px;">
+        <img src="assets/logo.png" alt="Fine ERP Cloud Logo" style="height: 45px; object-fit: contain; width: 100%;">
+      </div>
+      
+      <nav style="flex-grow: 1; display: flex; flex-direction: column;">
+        <ul class="nav-links">
+          <li class="nav-item active"><a href="#dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+          <li class="nav-item"><a href="#caixa"><i data-lucide="wallet"></i> Gestão de Caixa</a></li>
+          <li class="nav-item"><a href="#pos"><i data-lucide="shopping-cart"></i> Vendas POS</a></li>
+          <li class="nav-item"><a href="#compras"><i data-lucide="shopping-bag"></i> Compras / Entradas</a></li>
+          <li class="nav-item"><a href="#produtos"><i data-lucide="package"></i> Produtos & Serviços</a></li>
+          <li class="nav-item"><a href="#estoque"><i data-lucide="archive"></i> Controle de Estoque</a></li>
+          <li class="nav-item"><a href="#clientes"><i data-lucide="users"></i> Clientes & Fornecedores</a></li>
+          <li class="nav-item"><a href="#documentos"><i data-lucide="file-text"></i> Banco de Dados (Docs)</a></li>
+          <li class="nav-item"><a href="#contabilidade"><i data-lucide="bar-chart-3"></i> Contabilidade Geral</a></li>
+          <li class="nav-item"><a href="#impostos"><i data-lucide="percent"></i> Impostos & Guias</a></li>
+          <li class="nav-item"><a href="#rh"><i data-lucide="briefcase"></i> RH & Despesas</a></li>
+          <li class="nav-item"><a href="#relatorios"><i data-lucide="bar-chart-4"></i> Relatórios SaaS</a></li>
+          <li class="nav-item"><a href="#agenda"><i data-lucide="calendar"></i> Agenda & Fatos</a></li>
+          <li class="nav-item"><a href="#crm"><i data-lucide="heart"></i> CRM / Campanhas</a></li>
+          <li class="nav-item"><a href="#ia"><i data-lucide="bot"></i> Assistente IA</a></li>
+          <li class="nav-item"><a href="#auditoria"><i data-lucide="shield-check"></i> Auditoria de Ações</a></li>
+          <li class="nav-item"><a href="#integraçoes"><i data-lucide="link"></i> Integrações / POS</a></li>
+          <li class="nav-item"><a href="#planos-modulos"><i data-lucide="credit-card"></i> Planos & Módulos</a></li>
+          <li class="nav-item"><a href="#configuracoes"><i data-lucide="settings"></i> Configurações</a></li>
+        </ul>
+      </nav>
+
+      <div class="user-section">
+        <div class="user-info">
+          <div class="avatar" id="user-avatar">XM</div>
+          <div class="user-details">
+            <div class="user-name" id="top-user-name">Xavier Moises</div>
+            <div class="user-role" id="top-user-role">Administrador</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-content">
+      
+      <!-- Top Header Navigation -->
+      <header class="topbar">
+        <div class="company-selector-wrapper">
+          <i data-lucide="building-2" style="color:var(--color-primary)"></i>
+          <select id="topbar-company-select" class="topbar-select">
+            <!-- Dynamically populated -->
+          </select>
+          <button class="topbar-btn" style="padding: 4px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;" onclick="abrirModalNovaEmpresa()"><i data-lucide="plus" style="width:12px;"></i> Nova Empresa</button>
+        </div>
+
+        <div class="topbar-actions">
+          <div id="topbar-cash-badge" class="cash-badge closed">
+            <i data-lucide="lock" style="width:14px;"></i> Caixa Fechado
+          </div>
+
+          <div id="topbar-sync-badge" class="sync-badge online" onclick="abrirModalOfflineSync()" style="margin-right:12px;">
+            <span class="sync-dot"></span>
+            <span class="sync-text">Online • Híbrido</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-right:12px;">
+            <span style="font-size:12px; color:var(--text-muted);"><i data-lucide="coins" style="width:13px; display:inline-block; vertical-align:middle; margin-right:3px;"></i>Moeda:</span>
+            <select id="global-currency-select" class="topbar-select" onchange="alterarMoedaExibicao()">
+              <option value="MZN">MZN (Metical)</option>
+              <option value="USD">USD (Dólar)</option>
+              <option value="ZAR">ZAR (Rand)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:12px; color:var(--text-muted);">Simular Operador:</span>
+            <select id="top-role-select" class="topbar-select" onchange="trocarPerfilUtilizador()">
+              <option value="admin">Xavier Moises (Administrador)</option>
+              <option value="caixa1">Maria Estevão (Caixa)</option>
+              <option value="conta1">João Carlos (Contabilista)</option>
+            </select>
+          </div>
+
+          <button class="topbar-btn" onclick="toggleSimuladorMobile()">
+            <i data-lucide="smartphone"></i> Visualizar App Mobile
+          </button>
+        </div>
+      </header>
+
+      <!-- View Sections -->
+      <div class="view-container">
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="dashboard" class="view-section active">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Painel Geral</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Desempenho operacional e financeiro em tempo real</p>
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">
+              Moeda activa: <strong>MZN (Metical)</strong> • IVA padrão: <strong>16%</strong>
+            </div>
+          </div>
+
+          <!-- Notification Container -->
+          <div id="dash-notifications"></div>
+
+          <!-- Quick Actions Module (UX < 3 clicks) -->
+          <div class="quick-actions-container">
+            <h4 style="font-size:12px; color:var(--text-muted); margin:0 0 12px 0; text-transform:uppercase; font-family:'Outfit'; letter-spacing:0.5px;">Ações Rápidas de Faturação e Estoque</h4>
+            <div class="quick-actions-grid">
+              <div class="quick-action-card" onclick="switchView('pos')">
+                <div class="quick-action-icon-wrapper"><i data-lucide="shopping-cart"></i></div>
+                <div>
+                  <strong style="display:block; font-size:13px; color:var(--text-main);">Emitir Fatura</strong>
+                  <span style="font-size:11px; color:var(--text-muted);">Nova venda POS em 1 clique</span>
+                </div>
+              </div>
+              <div class="quick-action-card" onclick="abrirModalConsultaEstoque()">
+                <div class="quick-action-icon-wrapper"><i data-lucide="search"></i></div>
+                <div>
+                  <strong style="display:block; font-size:13px; color:var(--text-main);">Consultar Estoque</strong>
+                  <span style="font-size:11px; color:var(--text-muted);">Ver lotes e validades</span>
+                </div>
+              </div>
+              <div class="quick-action-card" onclick="redirecionarNovaDespesa()">
+                <div class="quick-action-icon-wrapper"><i data-lucide="dollar-sign"></i></div>
+                <div>
+                  <strong style="display:block; font-size:13px; color:var(--text-main);">Lançar Despesa</strong>
+                  <span style="font-size:11px; color:var(--text-muted);">Registar custos de RH</span>
+                </div>
+              </div>
+              <div class="quick-action-card" onclick="switchView('impostos')">
+                <div class="quick-action-icon-wrapper"><i data-lucide="percent"></i></div>
+                <div>
+                  <strong style="display:block; font-size:13px; color:var(--text-main);">Guias de Imposto</strong>
+                  <span style="font-size:11px; color:var(--text-muted);">Emitir Guia Modelo 20</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="grid-stats">
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Vendas do Dia</span>
+                <span class="stat-value" id="dash-vendas-dia">MZN 0</span>
+              </div>
+              <div class="stat-icon" style="background-color:rgba(99,102,241,0.1); color:var(--color-primary)">
+                <i data-lucide="shopping-bag"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Estado de Caixa</span>
+                <span class="stat-value" id="dash-caixa-status">Fechado</span>
+              </div>
+              <div class="stat-icon" style="background-color:rgba(245,158,11,0.1); color:var(--color-warning)">
+                <i data-lucide="wallet"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Lucro Estimado (Hoje)</span>
+                <span class="stat-value" id="dash-lucro-dia">MZN 0</span>
+              </div>
+              <div class="stat-icon" style="background-color:rgba(16,185,129,0.1); color:var(--color-success)">
+                <i data-lucide="trending-up"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <span class="stat-label">Clientes Cadastrados</span>
+                <span class="stat-value" id="dash-clientes-novos">2</span>
+              </div>
+              <div class="stat-icon" style="background-color:rgba(99,102,241,0.1); color:var(--color-primary)">
+                <i data-lucide="users"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts & Stats -->
+          <div class="charts-grid">
+            <div class="panel-card" style="height:350px; display:flex; flex-direction:column;">
+              <div class="panel-header">
+                <span class="panel-title"><i data-lucide="bar-chart-4"></i> Faturamento Mensal (MZN)</span>
+              </div>
+              <div style="flex-grow:1; position:relative;">
+                <canvas id="salesMonthlyChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel-card" style="height:350px; display:flex; flex-direction:column; overflow:hidden;">
+              <div class="panel-header">
+                <span class="panel-title"><i data-lucide="package-search"></i> Estoque Mínimo / Alertas</span>
+                <span class="badge" id="dash-estoque-badge">0</span>
+              </div>
+              <div style="overflow-y:auto; flex-grow:1; font-size:13px;" id="dash-estoque-alerta">
+                <!-- Low stock items listed here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Table of recent docs -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <span class="panel-title"><i data-lucide="history"></i> Últimos Documentos Emitidos</span>
+              <a href="#" onclick="switchView('documentos')" style="color:var(--color-primary); font-size:12px; text-decoration:none; font-weight:600;">Ver Todos</a>
+            </div>
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Cliente</th>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Valor Total</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-latest-docs">
+                  <!-- Dynamically loaded -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 2. GESTÃO DE CAIXA VIEW -->
+        <section id="caixa" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Gestão de Caixa</h1>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- Abertura de Caixa (Se Fechado) -->
+            <div class="panel-card" id="caixa-open-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="unlock"></i> Abertura de Caixa</span></div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <span class="form-label">Valor Inicial (Saldo Físico)</span>
+                  <input type="number" id="caixa-initial-value" class="form-input" placeholder="Ex: 5000">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Operador Responsável</span>
+                  <input type="text" id="caixa-operator" class="form-input" readonly>
+                </div>
+              </div>
+              <button class="btn btn-success" style="margin-top:15px;" onclick="abrirCaixa()">Abrir Caixa de Hoje</button>
+            </div>
+
+            <!-- Caixa Aberto / Movimentação / Fechamento -->
+            <div class="panel-card" id="caixa-session-card" style="display:none; grid-column:span 2;">
+              <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px;">
+                <!-- Status & Totals -->
+                <div style="background:var(--bg-main); padding:20px; border-radius:10px; border:1px solid var(--glass-border);">
+                  <h3 style="margin-bottom:15px; color:var(--color-primary);">Sessão de Caixa Activa</h3>
+                  <p style="font-size:13px; margin-bottom:8px;"><strong>Operador:</strong> <span id="sess-operator">Maria Estevão</span></p>
+                  <p style="font-size:13px; margin-bottom:15px;"><strong>Abertura:</strong> <span id="sess-open-time">08:00</span></p>
+                  
+                  <div style="border-top:1px solid var(--glass-border); padding-top:15px; display:flex; flex-direction:column; gap:8px; font-size:13px;">
+                    <div class="flex-between"><span>Valor Inicial:</span><span id="sess-initial-val">MZN 0</span></div>
+                    <div class="flex-between"><span>Entradas (Vendas):</span><span id="sess-vendas" style="color:var(--color-success)">MZN 0</span></div>
+                    <div class="flex-between"><span>Saídas lançadas:</span><span id="sess-saidas" style="color:var(--color-error)">MZN 0</span></div>
+                    
+                    <div style="border-top:1px dashed var(--glass-border); padding-top:8px; margin-top:5px;"></div>
+                    <div class="flex-between"><strong>Dinheiro em Caixa:</strong><strong id="sess-total-dinheiro">MZN 0</strong></div>
+                    <div class="flex-between"><span>M-Pesa acumulado:</span><span id="sess-total-mpesa">MZN 0</span></div>
+                    <div class="flex-between"><span>e-Mola acumulado:</span><span id="sess-total-emola">MZN 0</span></div>
+                    <div class="flex-between"><span>Banco/Transf.:</span><span id="sess-total-banco">MZN 0</span></div>
+                    <div class="flex-between"><span>Cartão (POS):</span><span id="sess-total-cartao">MZN 0</span></div>
+                  </div>
+                </div>
+
+                <!-- Launch entry/exit & Fechamento -->
+                <div>
+                  <!-- Lancar movimento -->
+                  <div class="panel-card" style="padding:15px; border-color:var(--color-primary); background:rgba(99,102,241,0.02); margin-bottom:15px;">
+                    <h4 style="margin-bottom:10px;">Lançar Movimento de Caixa manual</h4>
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+                      <div class="form-group">
+                        <span class="form-label">Tipo</span>
+                        <select id="mov-tipo" class="form-input">
+                          <option value="entrada">Entrada (Depósito/Suprimento)</option>
+                          <option value="saida">Saída (Pagamento/Sangria)</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <span class="form-label">Valor (MZN)</span>
+                        <input type="number" id="mov-valor" class="form-input" placeholder="Ex: 500">
+                      </div>
+                      <div class="form-group">
+                        <span class="form-label">Método</span>
+                        <select id="mov-metodo" class="form-input">
+                          <option value="Dinheiro">Dinheiro</option>
+                          <option value="Mpesa">M-Pesa</option>
+                          <option value="Emola">e-Mola</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                      <span class="form-label">Descrição / Motivo</span>
+                      <input type="text" id="mov-desc" class="form-input" placeholder="Descrição do movimento">
+                    </div>
+                    <button class="btn btn-secondary" style="margin-top:10px;" onclick="lancarMovimentoCaixa()">Registrar Movimento</button>
+                  </div>
+
+                  <!-- Fechamento -->
+                  <div class="panel-card" style="padding:15px; border-color:var(--color-error); background:rgba(244,63,94,0.02)">
+                    <h4 style="margin-bottom:10px; color:#fda4af;">Reconciliação e Fechamento de Caixa</h4>
+                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Controle físico do saldo real versus esperado no final do dia laboral.</p>
+                    <div class="form-grid" style="grid-template-columns:repeat(5, 1fr);">
+                      <div class="form-group"><span class="form-label">Dinheiro Real</span><input type="number" id="fech-dinheiro" class="form-input" placeholder="0"></div>
+                      <div class="form-group"><span class="form-label">M-Pesa Real</span><input type="number" id="fech-mpesa" class="form-input" placeholder="0"></div>
+                      <div class="form-group"><span class="form-label">e-Mola Real</span><input type="number" id="fech-emola" class="form-input" placeholder="0"></div>
+                      <div class="form-group"><span class="form-label">Banco Real</span><input type="number" id="fech-banco" class="form-input" placeholder="0"></div>
+                      <div class="form-group"><span class="form-label">Cartão Real</span><input type="number" id="fech-cartao" class="form-input" placeholder="0"></div>
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                      <span class="form-label">Assinatura Operador</span>
+                      <input type="text" id="fech-signature" class="form-input" placeholder="Introduza a sua assinatura digital/nome">
+                    </div>
+                    <button class="btn btn-danger" style="margin-top:15px;" onclick="fecharCaixa()">Efetuar Fechamento de Caixa</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Historico de Caixas -->
+            <div class="panel-card" style="grid-column:span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="history"></i> Histórico de Fechamento</span></div>
+              <div class="table-wrapper">
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Operador</th>
+                      <th>Valor Inicial</th>
+                      <th>Valor Fechamento</th>
+                      <th>Divergência</th>
+                      <th>Horário</th>
+                    </tr>
+                  </thead>
+                  <tbody id="caixa-history-rows">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 3. POS BILLING / VENDA RÁPIDA VIEW -->
+        <section id="pos" class="view-section">
+          <div class="pos-layout">
+            
+            <!-- Products POS Grid -->
+            <div class="pos-products">
+              <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Faturamento POS</h1>
+                <div style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                  <i data-lucide="check-circle" style="color:var(--color-success)"></i> Impressão Térmica e A4 Prontas
+                </div>
+              </div>
+
+              <!-- POS warning if cash desk closed -->
+              <div id="pos-alert-area" class="alert-box">
+                <i data-lucide="lock"></i> Operação Bloqueada: Abra o caixa de vendas antes de emitir documentos e realizar vendas.
+              </div>
+
+              <!-- Product Search & Grid -->
+              <div id="pos-module-area" style="display:none; flex-direction:column; overflow:hidden; flex-grow:1;">
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                  <input type="text" id="pos-search-input" class="form-input" style="flex-grow:1;" placeholder="Pesquisar produto ou serviço...">
+                  <select id="pos-type-filter" class="topbar-select">
+                    <option value="todos">Todos Artigos</option>
+                    <option value="produtos">Apenas Produtos</option>
+                    <option value="servicos">Apenas Serviços</option>
+                  </select>
+                </div>
+                <div class="pos-grid" id="pos-products-grid">
+                  <!-- Loaded via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Basket Checkout -->
+            <div class="pos-cart">
+              <div class="panel-header" style="background:#111827; padding:15px; margin-bottom:0; border-bottom:1px solid var(--glass-border)">
+                <span class="panel-title"><i data-lucide="shopping-cart"></i> Carrinho de Compra</span>
+              </div>
+              
+              <div class="cart-items" id="pos-cart-items">
+                <!-- Cart list populated here -->
+              </div>
+
+              <div class="cart-summary">
+                <div class="form-group">
+                  <span class="form-label">Cliente Associado</span>
+                  <select id="pos-client-select" class="form-input">
+                    <!-- Options -->
+                  </select>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+                  <div class="form-group">
+                    <span class="form-label">Documento</span>
+                    <select id="pos-doc-type" class="form-input">
+                      <option value="Factura Simplificada">Factura Simplificada</option>
+                      <option value="Factura">Factura de Venda</option>
+                      <option value="Cotação">Orçamento / Cotação</option>
+                      <option value="Proforma">Fatura Proforma</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Método de Pago</span>
+                    <select id="pos-payment-method" class="form-input">
+                      <option value="Dinheiro">Dinheiro</option>
+                      <option value="Mpesa">M-Pesa (Celular)</option>
+                      <option value="Emola">e-Mola (Celular)</option>
+                      <option value="Banco">Transferência / Depósito</option>
+                      <option value="Cartao">Cartão de Crédito/Débito</option>
+                      <option value="Credito">Venda a Crédito (Pendente)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; margin-top:8px;">
+                  <div class="form-group">
+                    <span class="form-label">Moeda</span>
+                    <select id="pos-currency" class="form-input">
+                      <option value="MZN">MZN (Metical)</option>
+                      <option value="USD">USD (Dólar)</option>
+                      <option value="ZAR">ZAR (Rand)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Desconto manual</span>
+                    <input type="number" id="pos-discount" class="form-input" placeholder="0" value="0">
+                  </div>
+                </div>
+
+                <div style="margin-top:15px; border-top:1px dashed var(--glass-border); padding-top:12px;">
+                  <div class="flex-between" style="font-size:13px; color:var(--text-muted); margin-bottom:4px;">
+                    <span>Subtotal:</span>
+                    <span id="pos-subtotal-val">MZN 0</span>
+                  </div>
+                  <div class="cart-total-row">
+                    <span>Total Líquido:</span>
+                    <span id="pos-total-val" style="color:var(--color-success)">MZN 0</span>
+                  </div>
+                </div>
+
+                <button class="btn btn-success" style="margin-top:15px; width:100%; height:45px; font-size:15px;" onclick="finalizarVenda()">
+                  <i data-lucide="check-square"></i> Finalizar Venda & Emitir PDF
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- 4. PRODUTOS & SERVIÇOS VIEW -->
+        <section id="produtos" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Cadastro de Produtos & Serviços</h1>
+
+          <!-- Add Product Panel -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="plus-circle"></i> Cadastrar Novo Produto</span></div>
+            <div class="form-grid" style="grid-template-columns:2fr 1.2fr 1.2fr 1.2fr 1fr 1fr 1.5fr 1.5fr;">
+              <div class="form-group"><span class="form-label">Nome do Artigo</span><input type="text" id="new-prod-name" class="form-input" placeholder="Ex: Rato Óptico"></div>
+              <div class="form-group"><span class="form-label">Código/SKU</span><input type="text" id="new-prod-code" class="form-input" placeholder="Ex: P005"></div>
+              <div class="form-group"><span class="form-label">Preço Compra (MZN)</span><input type="number" id="new-prod-price-purchase" class="form-input" placeholder="0"></div>
+              <div class="form-group"><span class="form-label">Preço Venda (MZN)</span><input type="number" id="new-prod-price-sale" class="form-input" placeholder="0"></div>
+              <div class="form-group"><span class="form-label">Estoque Inicial</span><input type="number" id="new-prod-stock" class="form-input" placeholder="0"></div>
+              <div class="form-group"><span class="form-label">Estoque Mínimo</span><input type="number" id="new-prod-min-stock" class="form-input" placeholder="5"></div>
+              <div class="form-group"><span class="form-label">Lote Inicial</span><input type="text" id="new-prod-lote" class="form-input" placeholder="Ex: L-001"></div>
+              <div class="form-group"><span class="form-label">Data Validade</span><input type="date" id="new-prod-validade" class="form-input"></div>
+            </div>
+            <button class="btn" style="margin-top:15px;" onclick="cadastrarProduto()"><i data-lucide="check"></i> Cadastrar Produto</button>
+          </div>
+
+          <!-- Products List -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="table"></i> Catálogo de Mercadorias / Produtos</span></div>
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th>Preço Compra</th>
+                    <th>Preço Venda</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-rows">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Services Registration -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="plus-circle"></i> Cadastrar Novo Serviço</span></div>
+            <div class="form-grid" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;">
+              <div class="form-group"><span class="form-label">Nome do Serviço</span><input type="text" id="new-serv-name" class="form-input" placeholder="Ex: Manutenção TI"></div>
+              <div class="form-group"><span class="form-label">Categoria</span><input type="text" id="new-serv-category" class="form-input" placeholder="Suporte/Apoio"></div>
+              <div class="form-group"><span class="form-label">Preço Fatura (MZN)</span><input type="number" id="new-serv-price" class="form-input" placeholder="0"></div>
+              <div class="form-group"><span class="form-label">Duração Estimada</span><input type="text" id="new-serv-duration" class="form-input" placeholder="2h"></div>
+              <div class="form-group"><span class="form-label">Comissão Técnico (%)</span><input type="number" id="new-serv-commission" class="form-input" placeholder="10"></div>
+            </div>
+            <button class="btn" style="margin-top:15px;" onclick="cadastrarServico()"><i data-lucide="check"></i> Cadastrar Serviço</button>
+          </div>
+
+          <!-- Services List -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="briefcase"></i> Lista de Serviços Prestados</span></div>
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th>Preço</th>
+                    <th>Duração</th>
+                    <th>Comissão (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="services-table-rows">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 5. CONTROLE DE ESTOQUE VIEW -->
+        <section id="estoque" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Movimentos de Estoque</h1>
+
+          <!-- Register Movement Form -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="shuffle"></i> Lançar Movimentação de Artigo</span></div>
+            <div class="form-grid" style="grid-template-columns:2fr 1.2fr 1fr 1.2fr 1.2fr 2fr;">
+              <div class="form-group">
+                <span class="form-label">Produto</span>
+                <select id="stk-prod-select" class="form-input">
+                  <!-- Loaded dynamically -->
+                </select>
+              </div>
+              <div class="form-group">
+                <span class="form-label">Tipo de Movimento</span>
+                <select id="stk-tipo" class="form-input">
+                  <option value="entrada">Entrada (Compra/Inventário)</option>
+                  <option value="saida">Saída (Desperdício/Ajuste)</option>
+                  <option value="quebras">Quebras / Perdas (Danificado)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <span class="form-label">Quantidade</span>
+                <input type="number" id="stk-qty" class="form-input" placeholder="Ex: 10">
+              </div>
+              <div class="form-group">
+                <span class="form-label">Lote (Entrada)</span>
+                <input type="text" id="stk-lote" class="form-input" placeholder="Ex: L-001">
+              </div>
+              <div class="form-group">
+                <span class="form-label">Validade (Entrada)</span>
+                <input type="date" id="stk-validade" class="form-input">
+              </div>
+              <div class="form-group">
+                <span class="form-label">Observação / Nota fiscal</span>
+                <input type="text" id="stk-desc" class="form-input" placeholder="Ex: Ajuste de Inventário Anual">
+              </div>
+            </div>
+            <button class="btn" style="margin-top:15px;" onclick="lancarMovimentoEstoque()">Registrar Movimentação</button>
+          </div>
+
+          <!-- History of Movements -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="clock"></i> Registo Cronológico de Entrada/Saída</span></div>
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Produto</th>
+                    <th>Movimento</th>
+                    <th>Quantidade</th>
+                    <th>Documento / Justificação</th>
+                  </tr>
+                </thead>
+                <tbody id="stk-movements-log">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 6. CLIENTES & FORNECEDORES VIEW -->
+        <section id="clientes" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Gestão de Terceiros (Clientes & Fornecedores)</h1>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            
+            <!-- Clients Management -->
+            <div>
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="user-plus"></i> Novo Cliente</span></div>
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="form-group"><span class="form-label">Nome Completo</span><input type="text" id="new-cli-name" class="form-input" placeholder="Ex: Kuhanha Lda"></div>
+                  <div class="form-group"><span class="form-label">NUIT (Moçambique)</span><input type="text" id="new-cli-nuit" class="form-input" placeholder="400xxxxxx"></div>
+                  <div class="form-group"><span class="form-label">Telefone</span><input type="text" id="new-cli-phone" class="form-input" placeholder="+258 8x"></div>
+                  <div class="form-group"><span class="form-label">Email</span><input type="email" id="new-cli-email" class="form-input" placeholder="ex@mail.co.mz"></div>
+                  <div class="form-group" style="grid-column:span 2;"><span class="form-label">Limite de Crédito Corrente (MZN)</span><input type="number" id="new-cli-limit" class="form-input" placeholder="150000" value="50000"></div>
+                </div>
+                <button class="btn" style="margin-top:15px;" onclick="cadastrarCliente()">Salvar Cliente</button>
+              </div>
+
+              <!-- Clients List -->
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="users"></i> Clientes Correntes</span></div>
+                <div class="table-wrapper">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>NUIT</th>
+                        <th>Telefone</th>
+                        <th>Email</th>
+                        <th>Crédito Consumido / Limite</th>
+                        <th>Acções</th>
+                      </tr>
+                    </thead>
+                    <tbody id="clientes-rows">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suppliers Management -->
+            <div>
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="truck"></i> Novo Fornecedor</span></div>
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="form-group"><span class="form-label">Nome da Empresa</span><input type="text" id="new-sup-name" class="form-input" placeholder="Ex: Mega Dist"></div>
+                  <div class="form-group"><span class="form-label">NUIT Fornecedor</span><input type="text" id="new-sup-nuit" class="form-input" placeholder="400xxxxxx"></div>
+                  <div class="form-group"><span class="form-label">Telefone</span><input type="text" id="new-sup-phone" class="form-input"></div>
+                  <div class="form-group"><span class="form-label">Email</span><input type="email" id="new-sup-email" class="form-input"></div>
+                </div>
+                <button class="btn" style="margin-top:15px;" onclick="cadastrarFornecedor()">Salvar Fornecedor</button>
+              </div>
+
+              <!-- Suppliers List -->
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="truck"></i> Lista de Fornecedores</span></div>
+                <div class="table-wrapper">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th>Fornecedor</th>
+                        <th>NUIT</th>
+                        <th>Telefone</th>
+                        <th>Email</th>
+                        <th>Localização</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fornecedores-rows">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- 7. DOCUMENTS ARCHIVE DATABASE VIEW -->
+        <section id="documentos" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Banco de Dados dos Documentos</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Arquivo digital unificado e imutável de faturamento comercial</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary" onclick="simularSincronizacaoBancaria()"><i data-lucide="refresh-cw"></i> Sincronizar Recebimentos M-Pesa / Banco</button>
+            </div>
+          </div>
+
+          <div id="sync-status" style="margin-bottom:15px; font-size:13px; font-weight:600;"></div>
+
+          <div class="panel-card">
+            <!-- Search Filter -->
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+              <input type="text" id="docs-search-input" class="form-input" style="flex-grow:1;" placeholder="Pesquisar por número, cliente, operador ou NUIT do cliente...">
+              <button class="btn" onclick="pesquisarDocumentos()"><i data-lucide="search"></i> Pesquisar</button>
+            </div>
+
+            <!-- Documents Table -->
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Tipo</th>
+                    <th>Cliente</th>
+                    <th>Data de Emissão</th>
+                    <th>Valor Total</th>
+                    <th>Método Pagamento</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="docs-db-rows">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 8. CONTABILIDADE GERAL VIEW -->
+        <section id="contabilidade" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Contabilidade Geral & Demonstrações</h1>
+          
+          <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; margin-bottom:30px;">
+            <!-- Plano de Contas -->
+            <div class="panel-card" style="max-height:500px; display:flex; flex-direction:column;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="book-open"></i> Plano de Contas Geral (PGC-PE)</span></div>
+              <div style="overflow-y:auto; flex-grow:1;" id="acc-plano-list">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+
+            <!-- Livro Diario Log -->
+            <div class="panel-card" style="max-height:500px; display:flex; flex-direction:column;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="layers"></i> Livro Diário de Lançamentos Automáticos</span></div>
+              <div class="table-wrapper" style="overflow-y:auto; flex-grow:1;">
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Histórico</th>
+                      <th>Conta Débito</th>
+                      <th>Conta Crédito</th>
+                      <th>Valor (MZN)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="acc-ledger-rows">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Balancete de Verificação -->
+          <div class="panel-card">
+            <div class="panel-header"><span class="panel-title"><i data-lucide="scale"></i> Balancete de Verificação</span></div>
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descrição da Conta</th>
+                    <th>Débito Acum.</th>
+                    <th>Crédito Acum.</th>
+                    <th>Saldo Devedor</th>
+                    <th>Saldo Credor</th>
+                  </tr>
+                </thead>
+                <tbody id="acc-balancete-rows">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- DRE -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="trending-up"></i> Demonstração de Resultados (DRE)</span></div>
+              <div style="padding:10px; display:flex; flex-direction:column; gap:12px; font-size:14px;">
+                <div class="flex-between"><span>(+) Venda de Artigos:</span><span id="dre-vendas">MZN 0</span></div>
+                <div class="flex-between"><span>(+) Prestação de Serviços:</span><span id="dre-servicos">MZN 0</span></div>
+                <div class="flex-between" style="border-top:1px solid var(--glass-border); padding-top:6px; font-weight:bold;">
+                  <span>(=) Rendimentos Operacionais:</span><span id="dre-total-proveitos">MZN 0</span>
+                </div>
+                <div class="flex-between" style="color:var(--color-error)"><span>(-) Custo das Mercadorias Vendidas (CMV):</span><span id="dre-cmv">MZN 0</span></div>
+                <div class="flex-between" style="border-top:1px solid var(--glass-border); padding-top:6px; font-weight:bold;">
+                  <span>(=) Margem / Lucro Bruto:</span><span id="dre-lucro-bruto">MZN 0</span>
+                </div>
+                <div class="flex-between" style="color:var(--color-error)"><span>(-) Fornecimentos e Serviços Externos (FSE):</span><span id="dre-fse">MZN 0</span></div>
+                <div class="flex-between" style="color:var(--color-error)"><span>(-) Custos com Colaboradores (Salários):</span><span id="dre-pessoal">MZN 0</span></div>
+                <div class="flex-between" style="border-top:2px solid var(--color-primary); padding-top:10px; font-size:18px; font-weight:bold;">
+                  <span>(=) RESULTADO LÍQUIDO DO EXERCÍCIO:</span><span id="dre-resultado">MZN 0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Balanço Patrimonial -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="landmark"></i> Balanço Patrimonial Simplicado</span></div>
+              <div style="padding:10px; display:flex; flex-direction:column; gap:12px; font-size:13px;">
+                <!-- Ativo -->
+                <div>
+                  <h4 style="border-bottom:1px solid var(--glass-border); padding-bottom:4px; margin-bottom:8px; color:var(--color-primary);">Ativo</h4>
+                  <div class="flex-between"><span>Caixa Geral (1.1):</span><span id="bp-caixa">0</span></div>
+                  <div class="flex-between"><span>Depósitos Bancários (1.2):</span><span id="bp-bancos">0</span></div>
+                  <div class="flex-between"><span>Clientes Nacionais (2.1):</span><span id="bp-clientes">0</span></div>
+                  <div class="flex-between"><span>Inventário de Estoque (3.1):</span><span id="bp-estoque">0</span></div>
+                  <div class="flex-between" style="font-weight:bold; margin-top:5px;"><span>TOTAL DO ATIVO:</span><span id="bp-total-ativo" style="color:var(--color-success)">0</span></div>
+                </div>
+
+                <!-- Passivo & CP -->
+                <div style="margin-top:10px;">
+                  <h4 style="border-bottom:1px solid var(--glass-border); padding-bottom:4px; margin-bottom:8px; color:var(--color-warning);">Passivo & Capital Próprio</h4>
+                  <div class="flex-between"><span>Fornecedores Nacionais (4.1):</span><span id="bp-fornecedores">0</span></div>
+                  <div class="flex-between"><span>Estado (IVA a Pagar - 4.2):</span><span id="bp-iva">0</span></div>
+                  <div class="flex-between" style="font-weight:bold; margin-top:5px; margin-bottom:10px;"><span>TOTAL DO PASSIVO:</span><span id="bp-total-passivo">0</span></div>
+
+                  <div class="flex-between"><span>Capital Social Subscrito (5.1):</span><span id="bp-capital">0</span></div>
+                  <div class="flex-between"><span>Resultados Transitados (Acumulados):</span><span id="bp-lucro-acum">0</span></div>
+                  <div class="flex-between" style="font-weight:bold; margin-top:5px; margin-bottom:10px;"><span>TOTAL DO CAPITAL PRÓPRIO:</span><span id="bp-total-cp">0</span></div>
+
+                  <div class="flex-between" style="border-top:1px dashed var(--glass-border); padding-top:6px; font-weight:bold; font-size:14px;">
+                    <span>TOTAL PASSIVO E CAPITAL PRÓPRIO:</span><span id="bp-total-passivo-cp">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 9. RECURSOS HUMANOS E DESPESAS VIEW -->
+        <section id="rh" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Recursos Humanos & Despesas Operacionais</h1>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- HR staff -->
+            <div>
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="user-check"></i> Cadastrar Colaborador</span></div>
+                <div class="form-grid" style="grid-template-columns:2fr 1fr 1fr;">
+                  <div class="form-group"><span class="form-label">Nome Completo</span><input type="text" id="new-emp-name" class="form-input" placeholder="Ex: Sérgio Tembe"></div>
+                  <div class="form-group"><span class="form-label">Cargo / Função</span><input type="text" id="new-emp-role" class="form-input" placeholder="Técnico"></div>
+                  <div class="form-group"><span class="form-label">Salário Base (MZN)</span><input type="number" id="new-emp-salary" class="form-input" placeholder="25000"></div>
+                </div>
+                <button class="btn" style="margin-top:15px;" onclick="cadastrarFuncionario()">Registrar Funcionário</button>
+              </div>
+
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="users"></i> Quadro de Funcionários & Salários</span></div>
+                <div class="table-wrapper">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Função</th>
+                        <th>Salário Bruto</th>
+                        <th>INSS (3%)</th>
+                        <th>IRPS Retido</th>
+                        <th>Líquido</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="rh-employees-rows">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expenses tracker -->
+            <div>
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="file-minus"></i> Novo Gasto / Despesa Operacional</span></div>
+                <div class="form-grid" style="grid-template-columns:1.2fr 1.2fr 0.8fr 1fr 1.2fr 2fr;">
+                  <div class="form-group">
+                    <span class="form-label">Categoria</span>
+                    <select id="new-exp-category" class="form-input">
+                      <option value="Água">Água (FIPAG)</option>
+                      <option value="Energia">Energia (EDM)</option>
+                      <option value="Internet">Internet (TV Cabo/Vodacom)</option>
+                      <option value="Renda">Renda de Escritório</option>
+                      <option value="Combustível">Combustível / Logística</option>
+                      <option value="Diversas">Diversas</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Valor Total</span>
+                    <input type="number" id="new-exp-amount" class="form-input" placeholder="Ex: 2500">
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Moeda</span>
+                    <select id="new-exp-currency" class="form-input">
+                      <option value="MZN" selected>MZN</option>
+                      <option value="USD">USD</option>
+                      <option value="ZAR">ZAR</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">IVA Suportado</span>
+                    <select id="new-exp-iva" class="form-input">
+                      <option value="16">IVA Padrão (16%)</option>
+                      <option value="0" selected>Isento (0%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Retenção IRPS</span>
+                    <select id="new-exp-irps" class="form-input">
+                      <option value="0" selected>Nenhuma (0%)</option>
+                      <option value="20">Serviços (20%)</option>
+                      <option value="10">Arrendamento (10%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <span class="form-label">Descrição da despesa</span>
+                    <input type="text" id="new-exp-desc" class="form-input" placeholder="Ex: EDM Recarga Bairro Central">
+                  </div>
+                </div>
+                <button class="btn" style="margin-top:15px;" onclick="cadastrarDespesa()">Registrar Despesa</button>
+              </div>
+
+              <!-- Expenses list -->
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="list-minus"></i> Histórico de Despesas Pagas</span></div>
+                <div class="table-wrapper">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Categoria</th>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody id="expenses-table-rows">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 10. CRM MODULE VIEW -->
+        <section id="crm" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Gestão de CRM & Campanhas de Marketing</h1>
+
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
+            <div>
+              <div class="panel-header" style="margin-bottom:15px;"><span class="panel-title"><i data-lucide="message-square"></i> Ações Rápidas por Cliente</span></div>
+              <div id="crm-client-list">
+                <!-- CRM cards -->
+              </div>
+            </div>
+
+            <!-- Campaign config -->
+            <div>
+              <div class="panel-card">
+                <div class="panel-header"><span class="panel-title"><i data-lucide="megaphone"></i> Disparo em Massa</span></div>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Configure campanhas promocionais integradas com canais de SMS e WhatsApp.</p>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <span class="form-label">Canal</span>
+                  <select class="form-input">
+                    <option>WhatsApp API (Simulação)</option>
+                    <option>Mensagem SMS Corporativa</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <span class="form-label">Grupo Alvo</span>
+                  <select class="form-input">
+                    <option>Todos os Clientes</option>
+                    <option>Clientes com saldo a receber</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                  <span class="form-label">Texto da Mensagem</span>
+                  <textarea class="form-input" rows="4" style="resize:none;">Prezado cliente, sua fatura está disponível para pagamento com 5% de desconto se paga hoje via M-Pesa. Obrigado pela preferência!</textarea>
+                </div>
+                <button class="btn" style="width:100%;" onclick="alert('Disparo de campanha em lote enviado com sucesso para todos os clientes!')">Iniciar Envio em Massa</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 11. ASSISTENTE INTELIGÊNCIA ARTIFICIAL VIEW -->
+        <section id="ia" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Assistente IA do Fine ERP Cloud</h1>
+
+          <div class="chat-container">
+            <!-- Messages box -->
+            <div class="chat-messages" id="chat-messages-area">
+              <!-- Seeded dynamically -->
+            </div>
+
+            <!-- Input area -->
+            <div class="chat-input-area">
+              <input type="text" id="chat-input" class="form-input" style="flex-grow:1;" placeholder="Pergunte-me: 'Quanto vendi hoje?', 'Quem deve dinheiro?' ou 'Qual produto vende mais?'">
+              <button class="btn" onclick="enviarMensagemChat()"><i data-lucide="send"></i> Perguntar à IA</button>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 12. AUDITORIA DE AÇÕES VIEW -->
+        <section id="auditoria" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Histórico de Auditoria & Segurança</h1>
+          <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Registro completo de ações imutáveis do sistema para conformidade legal (Lei Fiscal de Moçambique)</p>
+
+          <div class="panel-card">
+            <div class="table-wrapper">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Data / Hora</th>
+                    <th>Operador</th>
+                    <th>Ação Executada</th>
+                    <th>Endereço IP</th>
+                    <th>Dispositivo / Navegador</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-log-rows">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 14. COMPRAS VIEW -->
+        <section id="compras" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Registro de Compras & Entrada de Estoque</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Entrada de existências e atualização do custo médio ponderado</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- Register Purchase -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="plus-circle"></i> Registrar Nova Compra</span></div>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                  <span class="form-label">Fornecedor</span>
+                  <select id="pur-sup-select" class="form-input">
+                    <!-- Dynamically populated -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Produto</span>
+                  <select id="pur-prod-select" class="form-input">
+                    <!-- Dynamically populated -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Quantidade Comprada</span>
+                  <input type="number" id="pur-qty" class="form-input" placeholder="Ex: 10">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Custo Unitário</span>
+                  <input type="number" id="pur-cost" class="form-input" placeholder="Ex: 25000">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Moeda</span>
+                  <select id="pur-currency" class="form-input">
+                    <option value="MZN">MZN (Metical)</option>
+                    <option value="USD">USD (Dólar)</option>
+                    <option value="ZAR">ZAR (Rand)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Método de Pagamento</span>
+                  <select id="pur-payment-method" class="form-input">
+                    <option value="Banco">Banco / Transferência</option>
+                    <option value="Dinheiro">Dinheiro de Caixa</option>
+                    <option value="Credito">Compra a Crédito (Pendente)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">IVA Suportado</span>
+                  <select id="pur-iva" class="form-input">
+                    <option value="16" selected>IVA Padrão (16%)</option>
+                    <option value="0">Isento (0%)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Lote do Produto</span>
+                  <input type="text" id="pur-lote" class="form-input" placeholder="Ex: LOTE-123">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Data de Validade</span>
+                  <input type="date" id="pur-validade" class="form-input">
+                </div>
+              </div>
+              <button class="btn btn-success" style="margin-top:15px;" onclick="registrarNovaCompra()">Lançar Compra & Estoque</button>
+            </div>
+
+            <!-- Cost average simulator indicator -->
+            <div class="panel-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="calculator"></i> Custo Médio Ponderado (Fórmula)</span></div>
+              <div style="font-size:13px; color:var(--text-muted); line-height:1.6; flex-grow:1;">
+                <p style="margin-bottom:10px;">O custo de aquisição em Moçambique é calculado dinamicamente utilizando a fórmula de custo médio ponderado:</p>
+                <div style="background:var(--bg-main); padding:10px; border-radius:6px; font-family:monospace; text-align:center; color:var(--color-primary); margin-bottom:15px;">
+                  CMP = (Estoque Antigo &times; Custo Antigo + Qtd Nova &times; Custo Novo) / (Estoque Antigo + Qtd Nova)
+                </div>
+                <p>Ao registrar a compra, o sistema atualiza o **Preço de Compra** e recalcula o **CMV** (Custo das Mercadorias Vendidas) nas vendas futuras.</p>
+              </div>
+            </div>
+
+            <!-- Purchase History -->
+            <div class="panel-card" style="grid-column:span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="history"></i> Histórico de Compras Realizadas</span></div>
+              <div class="table-wrapper">
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Fornecedor</th>
+                      <th>Artigo / Detalhes</th>
+                      <th>Quantidade</th>
+                      <th>Valor Total</th>
+                      <th>Método</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="purchases-table-rows">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 15. RELATÓRIOS VIEW -->
+        <section id="relatorios" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Painel de Relatórios & Exportação</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Análise avançada de faturamento, margens e obrigações fiscais</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- Summary stats -->
+            <div class="panel-card" style="grid-column:span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="pie-chart"></i> Consolidado Anual & Mensal</span></div>
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; text-align:center;">
+                <div style="background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--glass-border);">
+                  <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">TOTAL RECEITAS (ANUAL)</div>
+                  <div style="font-size:20px; font-weight:bold; color:var(--color-success);" id="rep-receitas-ano">MZN 0</div>
+                </div>
+                <div style="background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--glass-border);">
+                  <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">TOTAL DESPESAS (ANUAL)</div>
+                  <div style="font-size:20px; font-weight:bold; color:var(--color-error);" id="rep-despesas-ano">MZN 0</div>
+                </div>
+                <div style="background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--glass-border);">
+                  <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">ESTOQUE VALORIZADO</div>
+                  <div style="font-size:20px; font-weight:bold; color:var(--color-primary);" id="rep-estoque-val">MZN 0</div>
+                </div>
+                <div style="background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--glass-border);">
+                  <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">IVA A PAGAR (ESTADO)</div>
+                  <div style="font-size:20px; font-weight:bold; color:var(--color-warning);" id="rep-iva-estado">MZN 0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cost center rates -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="folder"></i> Desempenho por Centro de Custos</span></div>
+              <div class="table-wrapper">
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>Centro de Custo</th>
+                      <th>Proveitos</th>
+                      <th>Custos</th>
+                      <th>Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rep-cost-centers-rows">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Export panel -->
+            <div class="panel-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="download"></i> Central de Downloads Fiscais</span></div>
+              <div style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:15px;">
+                Selecione o relatório comercial e baixe-o formatado em folha Excel CSV ou em folha de impressão PDF.
+              </div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn" onclick="exportarRelatorioCSV('vendas')"><i data-lucide="file-spreadsheet"></i> Exportar Relatório de Vendas (CSV)</button>
+                <button class="btn" onclick="exportarRelatorioCSV('produtos')"><i data-lucide="file-spreadsheet"></i> Exportar Relatório de Estoque (CSV)</button>
+                <button class="btn btn-secondary" onclick="exportarRelatorioImprimir('balancete')"><i data-lucide="printer"></i> Imprimir Balancete Geral (PDF)</button>
+                <button class="btn btn-secondary" onclick="exportarRelatorioImprimir('dre')"><i data-lucide="printer"></i> Imprimir DRE do Exercício (PDF)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 16. AGENDA VIEW -->
+        <section id="agenda" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Agenda Tributária, Lembretes & Cobranças</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Planejamento operacional e datas críticas fiscais de Moçambique</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px;">
+            <!-- Register task/reminder -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="plus-circle"></i> Novo Compromisso / Lembrete</span></div>
+              <div class="form-grid" style="grid-template-columns:1fr;">
+                <div class="form-group">
+                  <span class="form-label">Título da Tarefa</span>
+                  <input type="text" id="age-title" class="form-input" placeholder="Ex: Pagamento IRPS">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Data Limite</span>
+                  <input type="date" id="age-date" class="form-input">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Tipo</span>
+                  <select id="age-type" class="form-input">
+                    <option value="Imposto">Imposto / Fiscal (AT)</option>
+                    <option value="Cobrança">Cobrança de Cliente</option>
+                    <option value="Reunião">Reunião Interna</option>
+                    <option value="Lembrete">Lembrete Geral</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Descrição</span>
+                  <input type="text" id="age-desc" class="form-input" placeholder="Ex: Submeter declaração M/20">
+                </div>
+              </div>
+              <button class="btn" style="margin-top:15px; width:100%;" onclick="adicionarCompromisso()"><i data-lucide="check"></i> Agendar Evento</button>
+            </div>
+
+            <!-- Calendar Schedule list -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="calendar"></i> Linha de Tempo / Eventos Agendados</span></div>
+              <div style="display:flex; flex-direction:column; gap:12px; max-height:400px; overflow-y:auto;" id="agenda-list-rows">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 17. INTEGRAÇÕES VIEW -->
+        <section id="integraçoes" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Integrações de Hardware & Sistemas</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Simulação interativa de periféricos de ponto de venda e APIs externas</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <!-- Impressora Térmica -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="printer"></i> Impressora Térmica POS (80mm)</span></div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Simule a impressão rápida de recibos em bobina térmica padrão de ponto de venda.</p>
+              <div class="form-group" style="margin-bottom:10px;">
+                <span class="form-label">Selecionar Último Documento</span>
+                <select id="int-print-doc" class="form-input">
+                  <!-- Loaded via JS -->
+                </select>
+              </div>
+              <button class="btn" onclick="simularImpressaoTermica()"><i data-lucide="printer"></i> Simular Cupom Térmico (Print)</button>
+            </div>
+
+            <!-- Leitor de código de barras -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="scan"></i> Simulador de Leitor de Código de Barras</span></div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Simule a pistola de laser lendo o código EAN de um produto para adicioná-lo diretamente no carrinho do POS.</p>
+              <div class="form-group" style="margin-bottom:10px;">
+                <span class="form-label">Ler Código EAN do Produto</span>
+                <select id="int-barcode-select" class="form-input">
+                  <!-- Loaded via JS -->
+                </select>
+              </div>
+              <button class="btn btn-success" onclick="simularLeituraCodigoBarras()"><i data-lucide="shopping-cart"></i> BIP! Adicionar ao POS</button>
+            </div>
+
+            <!-- WhatsApp API Integrator -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="message-square"></i> Envio Automatizado via WhatsApp</span></div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Disparo automático da segunda via do documento em PDF diretamente para o número móvel do cliente.</p>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                  <span class="form-label">Número de Celular (+258)</span>
+                  <input type="text" id="int-wa-phone" class="form-input" placeholder="84xxxxxxx">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Mensagem Personalizada</span>
+                  <input type="text" id="int-wa-msg" class="form-input" value="Segue a sua fatura simplificada digital.">
+                </div>
+              </div>
+              <button class="btn" style="margin-top:15px;" onclick="simularEnvioWhatsApp()"><i data-lucide="send"></i> Enviar Ficheiro WhatsApp</button>
+            </div>
+
+            <!-- Consola de Homologação e Auditoria Fiscal AT -->
+            <div class="panel-card" style="grid-column: span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="shield-check"></i> Consola de Diagnóstico & Homologação Fiscal (AT Moçambique)</span></div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Audite a integridade e consistência criptográfica das assinaturas em cadeia dos seus documentos de acordo com o Regulamento de Faturação da Autoridade Tributária.</p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                <!-- Certificate Status -->
+                <div style="background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--glass-border); font-size:13px;">
+                  <h4 style="margin-bottom:12px; color:var(--color-primary);">Status de Homologação</h4>
+                  <p style="margin-bottom:8px;"><strong>Software Certificado nº:</strong> <span>105/AT/2026</span></p>
+                  <p style="margin-bottom:8px;"><strong>Chave RSA Activa:</strong> <span style="font-family:monospace; font-size:11px;">RSA-SHA256-4096bit</span></p>
+                  <p style="margin-bottom:8px;"><strong>Validade da Chave:</strong> <span>31 Dez 2026</span></p>
+                  <p style="margin-bottom:12px;"><strong>Servidor de Submissão AT:</strong> <span style="color:var(--color-success); font-weight:bold;">ONLINE</span></p>
+                  
+                  <button class="btn btn-secondary" style="width:100%; font-size:12px;" onclick="auditarIntegridadeFiscal()"><i data-lucide="activity"></i> Auditar Cadeia de Hashes</button>
+                  <div id="audit-feedback-badge" style="margin-top:10px; text-align:center;"></div>
+                </div>
+
+                <!-- Hash Chain Logs -->
+                <div>
+                  <h4 style="margin-bottom:10px; font-size:13px; color:var(--color-warning);">Assinaturas em Cadeia (Últimos Documentos)</h4>
+                  <div class="table-wrapper" style="max-height:180px; overflow-y:auto;">
+                    <table class="table-custom" style="font-size:12px;">
+                      <thead>
+                        <tr>
+                          <th>Nº Documento</th>
+                          <th>Data/Hora Sistema</th>
+                          <th>Total (MZN)</th>
+                          <th>Assinatura (Hash N)</th>
+                          <th>Ponte (Hash N-1)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="at-chain-rows">
+                        <!-- Loaded dynamically -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- M-Pesa Integration Console -->
+            <div class="panel-card" style="grid-column: span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="wallet"></i> Integração de Carteira Móvel M-Pesa Moçambique</span></div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                  <h4 style="margin-bottom: 10px; color: var(--color-warning);">Configuração da Conta Business</h4>
+                  <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                      <span class="form-label">M-Pesa Shortcode (M-Pesa Business)</span>
+                      <input type="text" id="int-mpesa-shortcode" class="form-input" value="840694" placeholder="Ex: 840694">
+                    </div>
+                    <div class="form-group">
+                      <span class="form-label">Número de Notificação (Celular)</span>
+                      <input type="text" id="int-mpesa-phone" class="form-input" value="84069427" placeholder="Ex: 84069427">
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                      <span class="form-label">M-Pesa API Key</span>
+                      <input type="password" id="int-mpesa-key" class="form-input" value="••••••••••••••••" placeholder="API Key fornecida pela Vodacom">
+                    </div>
+                  </div>
+                  <button class="btn btn-secondary" style="margin-top: 10px;" onclick="alert('Integração com M-Pesa Business salva e conectada com sucesso!')">Conectar API M-Pesa</button>
+                </div>
+                
+                <div style="background: rgba(255, 255, 255, 0.02); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                  <h4 style="margin-bottom: 10px; color: var(--color-success); display:flex; align-items:center; gap:6px;"><i data-lucide="code"></i> Emulador de Webhook HTTP JSON (Avançado)</h4>
+                  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Simule a receção de uma notificação Push C2B da Vodacom / Tmcel. Carregue um preset ou edite o JSON e envie para o listener de reconciliação contábil do Fine ERP.</p>
+                  
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <span class="form-label">Carregar Modelo de Payload</span>
+                    <select id="sim-webhook-preset" class="form-input" onchange="carregarPresetWebhook()">
+                      <option value="mpesa_geral">M-Pesa: Recebimento Geral (MZN 2500)</option>
+                      <option value="mpesa_reconcilia">M-Pesa: Liquidação de Fatura (MZN 40600, FT/2026/1002)</option>
+                      <option value="emola_geral">e-Mola: Recebimento Geral (MZN 1500)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <span class="form-label">Payload JSON (Webhook HTTP POST)</span>
+                    <textarea id="sim-webhook-json" class="form-input" rows="6" style="font-family: monospace; font-size: 12px; background: #020617; color: #34d399; line-height: 1.5; resize: none; border-color: var(--glass-border);"></textarea>
+                  </div>
+                  
+                  <button class="btn btn-success" style="width: 100%;" onclick="submeterWebhookJSON()"><i data-lucide="play"></i> Enviar POST Webhook JSON</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- 18. IMPOSTOS VIEW -->
+        <section id="impostos" class="view-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <div>
+              <h1 style="font-size:24px; font-weight:700; font-family:'Outfit'">Impostos & Obrigações Fiscais</h1>
+              <p style="color:var(--text-muted); font-size:14px;">Mapeamento, retenções na fonte e guias de recolhimento de receitas de Moçambique</p>
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">
+              Autoridade Tributária • Software Homologado nº 105/AT/2026
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px;">
+            <!-- IVA Box -->
+            <div class="panel-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div class="panel-header">
+                  <span class="panel-title"><i data-lucide="percent" style="color:var(--color-primary)"></i> Declaração Geral de IVA (Modelo A)</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:12px; font-size:14px; margin-bottom:20px;">
+                  <div class="flex-between">
+                    <span>(+) IVA Liquidado (Vendas 16%):</span>
+                    <span id="tax-iva-liquidado" style="font-weight:bold; color:var(--color-success);">MZN 0</span>
+                  </div>
+                  <div class="flex-between">
+                    <span>(-) IVA Suportado (Compras/Despesas 16%):</span>
+                    <span id="tax-iva-suportado" style="font-weight:bold; color:var(--color-error);">MZN 0</span>
+                  </div>
+                  <div style="border-top:1px dashed var(--glass-border); padding-top:10px; margin-top:5px;"></div>
+                  <div class="flex-between" style="font-size:16px; font-weight:bold;">
+                    <span>(=) Saldo de IVA Corrente:</span>
+                    <span id="tax-iva-net">MZN 0</span>
+                  </div>
+                </div>
+              </div>
+              <button class="btn" style="width:100%;" onclick="imprimirGuiaImpostos('iva')">
+                <i data-lucide="printer"></i> Gerar Guia Modelo 20 (IVA)
+              </button>
+            </div>
+
+            <!-- IRPS & INSS Box -->
+            <div class="panel-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div class="panel-header">
+                  <span class="panel-title"><i data-lucide="users" style="color:var(--color-warning)"></i> Retenções de IRPS & Contribuições INSS</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; margin-bottom:20px;">
+                  <div class="flex-between">
+                    <span>IRPS s/Salários Trabalhadores:</span>
+                    <span id="tax-irps-salarios" style="font-weight:600;">MZN 0</span>
+                  </div>
+                  <div class="flex-between">
+                    <span>IRPS s/Serviços Terceiros (20% / 10%):</span>
+                    <span id="tax-irps-servicos" style="font-weight:600;">MZN 0</span>
+                  </div>
+                  <div class="flex-between" style="color:var(--text-muted); font-size:11px; padding-left:10px;">
+                    <span>Total IRPS Retido a Entregar:</span>
+                    <span id="tax-irps-total" style="font-weight:bold; color:var(--text-main);">MZN 0</span>
+                  </div>
+                  <div style="border-top:1px dashed var(--glass-border); margin-top:3px; margin-bottom:3px;"></div>
+                  <div class="flex-between">
+                    <span>INSS - Desconto Trabalhadores (3%):</span>
+                    <span id="tax-inss-trabalhadores" style="font-weight:600;">MZN 0</span>
+                  </div>
+                  <div class="flex-between">
+                    <span>INSS - Encargo Entidade Patronal (4%):</span>
+                    <span id="tax-inss-patronal" style="font-weight:600;">MZN 0</span>
+                  </div>
+                  <div class="flex-between" style="color:var(--text-muted); font-size:11px; padding-left:10px;">
+                    <span>Total INSS a Depositar (7%):</span>
+                    <span id="tax-inss-total" style="font-weight:bold; color:var(--text-main);">MZN 0</span>
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-secondary" style="width:100%; border-color:var(--color-warning); color:var(--color-warning);" onclick="imprimirGuiaImpostos('irps_inss')">
+                <i data-lucide="printer"></i> Gerar Guia de Pagamento (IRPS / INSS)
+              </button>
+            </div>
+          </div>
+
+          <!-- Tax Rules Overview Box -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <span class="panel-title"><i data-lucide="info"></i> Manual Prático Fiscal - Moçambique</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; font-size:12px; color:var(--text-muted); line-height:1.6;">
+              <div>
+                <strong style="color:var(--text-main); display:block; margin-bottom:5px;">Imposto sobre o Valor Acrescentado (IVA)</strong>
+                A taxa em vigor é de **16%** em território nacional. Os sujeitos passivos devem apurar mensalmente o saldo do imposto até ao dia 15 do mês seguinte. Faturas emitidas a clientes isentos ou de exportação não liquidam IVA (0%).
+              </div>
+              <div>
+                <strong style="color:var(--text-main); display:block; margin-bottom:5px;">Retenção na Fonte de IRPS (Serviços)</strong>
+                Pagamentos de serviços a prestadores singulares sem contabilidade organizada estão sujeitos a retenção na fonte à taxa liberatória de **20%** (ou **10%** em arrendamento comercial), a entregar ao Estado até ao dia 20 do mês seguinte.
+              </div>
+              <div>
+                <strong style="color:var(--text-main); display:block; margin-bottom:5px;">Processamento Salarial (INSS & IRPS)</strong>
+                Os salários brutos sofrem desconto obrigatório de **3%** de INSS para o trabalhador, enquanto a empresa contribui com **4%**. O rendimento coletável restante é sujeito à tabela progressiva mensal de retenção na fonte de IRPS.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 13. CONFIGURAÇÕES VIEW -->
+        <section id="configuracoes" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Configurações de Fine ERP Cloud</h1>
+
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:20px;">
+            <!-- Company Profile -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="building-2"></i> Perfil Corporativo da Empresa</span></div>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group"><span class="form-label">Razão Social / Nome</span><input type="text" id="set-comp-name" class="form-input"></div>
+                <div class="form-group"><span class="form-label">NUIT Fiscal</span><input type="text" id="set-comp-nuit" class="form-input"></div>
+                <div class="form-group"><span class="form-label">Email de Contacto</span><input type="email" id="set-comp-email" class="form-input"></div>
+                <div class="form-group"><span class="form-label">Telefone Comercial</span><input type="text" id="set-comp-phone" class="form-input"></div>
+                <div class="form-group" style="grid-column:span 2;"><span class="form-label">Endereço Físico</span><input type="text" id="set-comp-address" class="form-input"></div>
+                <div class="form-group" style="grid-column:span 2; border-top: 1px dashed var(--glass-border); padding-top: 10px; margin-top: 5px;">
+                  <strong style="font-size: 13px; color: var(--color-primary);">Taxas de Câmbio de Referência (1 Moeda Estrangeira = X MZN)</strong>
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Taxa Dólar (USD)</span>
+                  <input type="number" id="set-rate-usd" class="form-input" step="0.01" placeholder="Ex: 64.00">
+                </div>
+                <div class="form-group">
+                  <span class="form-label">Taxa Rand (ZAR)</span>
+                  <input type="number" id="set-rate-zar" class="form-input" step="0.01" placeholder="Ex: 3.50">
+                </div>
+              </div>
+              <button class="btn" style="margin-top:15px;" onclick="salvarConfiguracoes()"><i data-lucide="save"></i> Salvar Alterações</button>
+            </div>
+
+            <!-- Database backup options -->
+            <div class="panel-card">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="hard-drive"></i> Backup & Recuperação</span></div>
+              <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Mantenha a sua empresa segura exportando e importando os ficheiros da base de dados localmente.</p>
+              
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn btn-secondary" onclick="gerarBackupManual()"><i data-lucide="download"></i> Descarregar Backup (JSON)</button>
+                
+                <div style="border-top:1px dashed var(--glass-border); padding-top:10px; margin-top:5px;"></div>
+                <span class="form-label">Restaurar Ficheiro de Backup</span>
+                <input type="file" id="restore-file-input" style="font-size:12px;" onchange="restaurarBackupManual(event)">
+
+                <div style="border-top:1px dashed var(--glass-border); padding-top:10px; margin-top:5px;"></div>
+                <button class="btn btn-danger" onclick="restaurarDadosOriginais()"><i data-lucide="rotate-ccw"></i> Reset Completo de Dados</button>
+              </div>
+            </div>
+
+            <!-- SaaS Plan -->
+            <div class="panel-card" style="grid-column:span 2;">
+              <div class="panel-header"><span class="panel-title"><i data-lucide="credit-card"></i> Assinatura SaaS - Fine ERP Cloud</span></div>
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px;">
+                <div style="background:var(--bg-main); padding:20px; border-radius:10px; border:2px solid var(--color-primary); text-align:center;">
+                  <h3 style="color:var(--color-primary); margin-bottom:5px;">Plano Básico</h3>
+                  <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">1.500 MZN <span style="font-size:12px; color:var(--text-muted);">/ mês</span></div>
+                  <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Adequado para pequenos comércios e caixas únicos.</p>
+                  <span class="badge" style="background-color:rgba(99,102,241,0.2); color:var(--color-primary);">Ativo em comp_2</span>
+                </div>
+                <div style="background:var(--bg-main); padding:20px; border-radius:10px; border:2px solid var(--color-success); text-align:center;">
+                  <h3 style="color:var(--color-success); margin-bottom:5px;">Plano Profissional</h3>
+                  <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">3.500 MZN <span style="font-size:12px; color:var(--text-muted);">/ mês</span></div>
+                  <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Contabilidade automatizada, múltiplos caixas e IA activa.</p>
+                  <span class="badge" style="background-color:rgba(16,185,129,0.2); color:var(--color-success);">Plano Ativo (comp_1)</span>
+                </div>
+                <div style="background:var(--bg-main); padding:20px; border-radius:10px; border:1px solid var(--glass-border); text-align:center;">
+                  <h3 style="color:var(--text-muted); margin-bottom:5px;">Plano Empresarial</h3>
+                  <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">7.500 MZN <span style="font-size:12px; color:var(--text-muted);">/ mês</span></div>
+                  <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Multiempresa sem limites, suporte corporativo premium 24/7.</p>
+                  <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px; margin-top:8px;" onclick="alert('Obrigado pelo interesse! Contacte nosso departamento comercial para upgrade.')">Upgrade</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 14. PLANOS & MÓDULOS VIEW -->
+        <section id="planos-modulos" class="view-section">
+          <h1 style="font-size:24px; font-weight:700; margin-bottom:20px; font-family:'Outfit'">Planos & Módulos Ativos</h1>
+          <p style="color:var(--text-muted); font-size:14px; margin-bottom:25px;">Personalize a sua assinatura mensal em moeda local (MZN) ativando apenas os recursos necessários para o seu negócio.</p>
+
+          <div style="display:grid; grid-template-columns:2fr 1.2fr; gap:20px; align-items:start;">
+            
+            <!-- Modules Selection Checklist -->
+            <div class="panel-card" style="margin-bottom:0;">
+              <div class="panel-header">
+                <span class="panel-title"><i data-lucide="layers" style="color:var(--color-primary)"></i> Módulos Disponíveis para Ativação</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:18px; padding-top:5px;">
+                
+                <!-- Module 1: Vendas (Base) -->
+                <div style="display:flex; align-items:start; gap:15px; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:10px; padding:15px;">
+                  <input type="checkbox" checked disabled style="width:20px; height:20px; margin-top:3px; accent-color:var(--color-primary);">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                      <strong style="font-size:14px; color:var(--text-main);">Módulo de Faturação & Vendas (Base)</strong>
+                      <span style="font-size:13px; font-weight:bold; color:var(--color-primary);">1.500 MZN / mês</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Inclui emissão de faturas simplificadas, controle de caixa local (POS), catálogo básico de produtos, cadastro de clientes e livro de caixa. Módulo obrigatório.</p>
+                  </div>
+                </div>
+
+                <!-- Module 2: Estoque & Lotes -->
+                <div style="display:flex; align-items:start; gap:15px; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:10px; padding:15px;">
+                  <input type="checkbox" id="mod-toggle-estoque" style="width:20px; height:20px; margin-top:3px; accent-color:var(--color-primary);" onchange="calcularFaturaMensal()">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                      <strong style="font-size:14px; color:var(--text-main);">Controle de Estoque & Lotes (FEFO)</strong>
+                      <span style="font-size:13px; font-weight:bold; color:var(--color-primary);">+ 900 MZN / mês</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Controle de lotes, datas de validade, regras automáticas de saída FEFO (First Expired First Out), ordens de compras a fornecedores, alertas de stock mínimo e perissecibilidade no Dashboard.</p>
+                  </div>
+                </div>
+
+                <!-- Module 3: CRM & Alertas -->
+                <div style="display:flex; align-items:start; gap:15px; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:10px; padding:15px;">
+                  <input type="checkbox" id="mod-toggle-crm" style="width:20px; height:20px; margin-top:3px; accent-color:var(--color-primary);" onchange="calcularFaturaMensal()">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                      <strong style="font-size:14px; color:var(--text-main);">CRM & Campanhas (Mensagens SMS/WhatsApp)</strong>
+                      <span style="font-size:13px; font-weight:bold; color:var(--color-primary);">+ 600 MZN / mês</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Envio de faturas digitais por WhatsApp Real e SMS Link, campanhas promocionais de marketing para clientes cadastrados, agenda de cobranças e eventos fiscais.</p>
+                  </div>
+                </div>
+
+                <!-- Module 4: Contabilidade & Impostos -->
+                <div style="display:flex; align-items:start; gap:15px; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:10px; padding:15px;">
+                  <input type="checkbox" id="mod-toggle-contabilidade" style="width:20px; height:20px; margin-top:3px; accent-color:var(--color-primary);" onchange="calcularFaturaMensal()">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                      <strong style="font-size:14px; color:var(--text-main);">Contabilidade Geral & Guias de Imposto</strong>
+                      <span style="font-size:13px; font-weight:bold; color:var(--color-primary);">+ 1.200 MZN / mês</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Livro Diário, Balancete de Verificação, Razão Geral, retenções na fonte de prestação de serviços (10%/20%) e emissão automatizada das Guias Modelo 20 de IVA e IRPS.</p>
+                  </div>
+                </div>
+
+                <!-- Module 5: Recursos Humanos -->
+                <div style="display:flex; align-items:start; gap:15px; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:10px; padding:15px;">
+                  <input type="checkbox" id="mod-toggle-rh" style="width:20px; height:20px; margin-top:3px; accent-color:var(--color-primary);" onchange="calcularFaturaMensal()">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                      <strong style="font-size:14px; color:var(--text-main);">Recursos Humanos & Folha Salarial</strong>
+                      <span style="font-size:13px; font-weight:bold; color:var(--color-primary);">+ 800 MZN / mês</span>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin:0;">Cadastro de funcionários, folhas salariais mensais, cálculo progressivo do IRPS de salários, INSS (3% trabalhador, 4% entidade patronal) e controlo de despesas operacionais da empresa.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Monthly Bill Summary Box -->
+            <div class="panel-card" style="margin-bottom:0; background:rgba(30, 41, 59, 0.4); border-color:var(--color-primary);">
+              <div class="panel-header">
+                <span class="panel-title"><i data-lucide="receipt" style="color:var(--color-success)"></i> Fatura de Assinatura</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:15px; font-size:13px;">
+                <p style="color:var(--text-muted); margin:0; font-size:12px;">Preços fixos em Meticais (MZN) imunes a flutuações cambiais.</p>
+                
+                <div style="border-top:1px dashed var(--glass-border); margin:5px 0;"></div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span>Módulo Base (Faturação)</span>
+                  <strong>1.500 MZN</strong>
+                </div>
+                
+                <div id="plan-breakdown-container">
+                  <!-- Populated dynamically by JS -->
+                </div>
+                
+                <div style="border-top:2px solid var(--glass-border); margin:10px 0; padding-top:10px; display:flex; justify-content:space-between; font-size:16px; font-weight:bold;">
+                  <span>Total Mensal:</span>
+                  <span id="plan-mzn-total" style="color:var(--color-success);">1.500 MZN</span>
+                </div>
+
+                <button class="btn btn-success" style="width:100%; height:42px; margin-top:10px;" onclick="salvarModulosAtivos()">
+                  <i data-lucide="check-circle"></i> Salvar e Aplicar Alterações
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Simulated Mobile App Simulator -->
+  <div class="mobile-simulator" id="mobile-simulator-widget">
+    <div class="mobile-simulator-header">
+      <div class="mobile-notch"></div>
+      <button class="mobile-close-btn" onclick="toggleSimuladorMobile()">X</button>
+    </div>
+    
+    <div class="mobile-iframe-wrapper" style="padding-top: 45px;">
+      <!-- Mobile content mockup -->
+      <div style="padding:15px; border-bottom:1px solid var(--glass-border); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-family:'Outfit'; font-weight:800; color:var(--color-primary)">Fine Mobile</span>
+        <span class="badge badge-instock">Sincronizado</span>
+      </div>
+
+      <div style="padding:15px;">
+        <h3 style="font-size:14px; margin-bottom:10px;">Dashboard Rápido</h3>
+        <div id="mobile-dash-stats" class="mobile-dashboard-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div style="padding:15px;">
+        <h4 style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">VER ESTOQUE (Top 3)</h4>
+        <div id="mobile-products-list" style="background:var(--bg-card); border-radius:8px; border:1px solid var(--glass-border);">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div style="padding:15px;">
+        <h4 style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">ÚLTIMAS FATURAS</h4>
+        <div id="mobile-docs-list" style="background:var(--bg-card); border-radius:8px; border:1px solid var(--glass-border);">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div style="padding:15px; text-align:center;">
+        <button class="btn" style="width:100%; font-size:12px;" onclick="alert('Funcionalidade de emissão rápida móvel: por favor use a interface web para maior precisão de impressão.')">
+          <i data-lucide="plus"></i> Emitir Recibo Rápido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cadastrar Empresa -->
+  <div id="modal-nova-empresa" class="login-overlay" style="display: none; z-index: 11000;">
+    <div class="login-box" style="width: 500px;">
+      <div class="panel-header" style="margin-bottom: 20px;">
+        <span class="panel-title"><i data-lucide="building-2"></i> Cadastrar Nova Empresa</span>
+        <button class="mobile-close-btn" onclick="fecharModalNovaEmpresa()" style="position: static;">X</button>
+      </div>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 15px;">
+        <div class="form-group" style="grid-column: span 2;">
+          <span class="form-label">Nome da Empresa / Razão Social</span>
+          <input type="text" id="add-comp-name" class="form-input" placeholder="Ex: Fine Art & Service Lda">
+        </div>
+        <div class="form-group">
+          <span class="form-label">NUIT (Fiscal)</span>
+          <input type="text" id="add-comp-nuit" class="form-input" placeholder="400xxxxxx">
+        </div>
+        <div class="form-group">
+          <span class="form-label">Telefone</span>
+          <input type="text" id="add-comp-phone" class="form-input" placeholder="84xxxxxxx">
+        </div>
+        <div class="form-group">
+          <span class="form-label">Email</span>
+          <input type="email" id="add-comp-email" class="form-input" placeholder="contacto@empresa.co.mz">
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <span class="form-label">Endereço Físico</span>
+          <input type="text" id="add-comp-address" class="form-input" placeholder="Ex: Laulane, Maputo">
+        </div>
+      </div>
+      <button class="btn btn-success" style="width: 100%; margin-top: 15px;" onclick="salvarNovaEmpresa()">Cadastrar e Entrar</button>
+    </div>
+  </div>
+
+  <!-- Modal Envio Alerta SMS / WhatsApp -->
+  <div id="modal-envio-alerta" class="login-overlay" style="display: none; z-index: 12000;">
+    <div class="login-box" style="width: 450px;">
+      <div class="panel-header" style="margin-bottom: 20px;">
+        <span class="panel-title" style="display: flex; align-items: center; gap: 8px;"><i data-lucide="send" style="color:var(--color-primary);"></i> Despacho de Mensagem Real</span>
+        <button class="mobile-close-btn" onclick="fecharModalAlerta()" style="position: static;">X</button>
+      </div>
+      <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 15px; gap: 15px;">
+        <div class="form-group">
+          <span class="form-label">Número do Celular (Moçambique)</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="color:var(--text-muted); font-size:14px; font-weight:600;">+258</span>
+            <input type="text" id="alerta-phone" class="form-input" placeholder="Ex: 847778899" style="flex:1;">
+          </div>
+        </div>
+        <div class="form-group">
+          <span class="form-label">Mensagem a Enviar</span>
+          <textarea id="alerta-msg" class="form-input" rows="4" style="height:auto; font-size:13px; line-height:1.4; resize:none; font-family:inherit;" placeholder="Escreva a mensagem..."></textarea>
+        </div>
+      </div>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:15px;">
+        <button class="btn btn-success" style="display:flex; align-items:center; justify-content:center; gap:6px; background:#22c55e;" onclick="enviarAlertaCanal('whatsapp')">
+          <i data-lucide="message-square"></i> WhatsApp Real
+        </button>
+        <button class="btn btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:6px; border-color:#3b82f6; color:#60a5fa;" onclick="enviarAlertaCanal('sms')">
+          <i data-lucide="smartphone"></i> SMS Link
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pagamento Móvel (M-Pesa / e-Mola) -->
+  <div id="modal-pagamento-movel" class="login-overlay" style="display: none; z-index: 13000;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+      
+      <!-- Phone Frame -->
+      <div style="width: 320px; background: #0f172a; border: 6px solid #334155; border-radius: 36px; padding: 25px 20px 20px 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative; border-color: var(--glass-border);">
+        
+        <!-- Speaker / Camera notch -->
+        <div style="width: 60px; height: 8px; background: #334155; border-radius: 4px; margin: -10px auto 15px auto;"></div>
+        
+        <!-- Phone Screen -->
+        <div id="movel-screen" style="background: #020617; height: 320px; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; border: 2px solid #1e293b; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif;">
+          
+          <!-- Screen Header -->
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+            <span id="movel-operator-label" style="font-weight: 700; text-transform: uppercase;">M-Pesa</span>
+            <span>LTE 4G 📶</span>
+          </div>
+          
+          <!-- Screen Content (Dynamic) -->
+          <div id="movel-screen-content" style="flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 10px 0;">
+            <p id="movel-ussd-msg" style="font-size: 13px; line-height: 1.5; color: #e2e8f0; margin-bottom: 15px;">Aguardando início de transação...</p>
+            
+            <div id="movel-pin-area" style="display: none;">
+              <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; display: block;">Introduza o PIN de 4 dígitos</span>
+              <input type="password" id="movel-pin-input" maxlength="4" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-size: 24px; text-align: center; outline: none; width: 120px; height: 45px; margin: 10px auto; letter-spacing: 8px; font-family: monospace;">
+            </div>
+            
+            <div id="movel-status-area" style="display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px;">
+              <!-- Spinner -->
+              <div class="movel-spinner" style="width: 32px; height: 32px; border: 3px dashed var(--color-primary); border-radius: 50%;"></div>
+              <span id="movel-status-text" style="font-size: 12px; color: var(--text-muted);">Processando pagamento...</span>
+            </div>
+          </div>
+          
+          <!-- Screen Actions -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn btn-success" id="movel-btn-confirm" onclick="confirmarPagamentoMovel()" style="width: 100%; font-size: 12px; padding: 8px; display: none;">Confirmar PIN</button>
+            <button class="btn btn-secondary" onclick="fecharModalPagamentoMovel()" style="width: 100%; font-size: 12px; padding: 8px; border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">Cancelar</button>
+          </div>
+          
+        </div>
+        
+        <!-- Home button or bar -->
+        <div style="width: 100px; height: 4px; background: #334155; border-radius: 2px; margin: 15px auto 0 auto;"></div>
+      </div>
+      
+    </div>
+  </div>
+
+  <style>
+    @keyframes movel-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .movel-spinner {
+      animation: movel-spin 1.2s linear infinite;
+    }
+  </style>
+
+  <!-- Modal Consulta Rápida de Estoque -->
+  <div id="modal-consulta-estoque" class="login-overlay" style="display: none; z-index: 12500;">
+    <div class="login-box" style="width: 550px; max-width: 95%;">
+      <div class="panel-header" style="margin-bottom: 20px;">
+        <span class="panel-title" style="display:flex; align-items:center; gap:8px;"><i data-lucide="search" style="color:var(--color-primary);"></i> Consulta Rápida de Stock e Validades</span>
+        <button class="mobile-close-btn" onclick="fecharModalConsultaEstoque()" style="position: static;">X</button>
+      </div>
+      <div class="form-group" style="margin-bottom:15px;">
+        <span class="form-label">Filtrar por Produto, Lote ou Categoria</span>
+        <input type="text" id="estoque-search-input" class="form-input" placeholder="Digite para pesquisar..." oninput="filtrarConsultaEstoqueRapida()">
+      </div>
+      <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
+              <th style="padding: 8px; text-align: left; font-size: 11px;">Produto</th>
+              <th style="padding: 8px; text-align: left; font-size: 11px;">Lote</th>
+              <th style="padding: 8px; text-align: right; font-size: 11px;">Stock</th>
+              <th style="padding: 8px; text-align: left; font-size: 11px;">Validade</th>
+            </tr>
+          </thead>
+          <tbody id="estoque-search-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Sincronização Híbrida Offline-First -->
+  <div id="modal-offline-sync" class="login-overlay" style="display: none; z-index: 12100;">
+    <div class="login-box" style="width: 500px;">
+      <div class="panel-header" style="margin-bottom: 20px;">
+        <span class="panel-title" style="display:flex; align-items:center; gap:8px;"><i data-lucide="wifi" style="color:var(--color-primary)"></i> Painel de Sincronismo Híbrido</span>
+        <button class="mobile-close-btn" onclick="fecharModalOfflineSync()" style="position: static;">X</button>
+      </div>
+      
+      <div style="background:rgba(255,255,255,0.02); border:1px solid var(--glass-border); border-radius:10px; padding:15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="display:block; font-size:13px;" id="offline-sim-status-title">Conexão: Online (Nuvem)</strong>
+          <span style="font-size:11px; color:var(--text-muted);" id="offline-sim-status-desc">Os dados são sincronizados em tempo real com o servidor principal.</span>
+        </div>
+        <div>
+          <button class="btn btn-secondary" id="btn-toggle-sim-net" onclick="simularAlternarConexao()" style="font-size:12px; padding:6px 12px; border-color:rgba(245, 158, 11, 0.4); color:#fde68a;">
+            Simular Offline
+          </button>
+        </div>
+      </div>
+
+      <!-- Sync Queue List -->
+      <div class="form-group" style="margin-bottom:20px;">
+        <span class="form-label" style="display:flex; justify-content:space-between;">
+          <span>Fila de Lançamentos Locais (Sem Sincronizar)</span>
+          <span id="sync-queue-count-badge" class="badge" style="background:var(--color-primary); color:white;">0 pendentes</span>
+        </span>
+        <div id="offline-sync-queue-list" style="max-height:150px; overflow-y:auto; border:1px solid var(--glass-border); border-radius:8px; padding:10px; font-size:11px; background:rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:8px;">
+          <!-- Dynamic items -->
+          <div style="text-align:center; color:var(--text-muted); padding:10px;">Fila vazia. Todas as transações estão sincronizadas.</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:20px; text-align:right;" id="last-sync-time-label">
+        Último sincronismo: --/--/---- --:--:--
+      </div>
+
+      <div id="sync-progress-area" style="display:none; margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+          <span id="sync-progress-text">Sincronizando transações locais...</span>
+          <span id="sync-progress-percentage">0%</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); height:8px; border-radius:4px; overflow:hidden;">
+          <div id="sync-progress-bar" style="height:100%; width:0%; background:var(--color-success); border-radius:4px; transition:width 0.1s;"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-success" id="btn-sync-now" style="width:100%; height:42px;" onclick="iniciarSincronismoManual()">
+        <i data-lucide="refresh-cw"></i> Sincronizar Fila Agora
+      </button>
+    </div>
+  </div>
+
+  <!-- Float Support Widget (WhatsApp Maputo / Provincial Helpline) -->
+  <div class="support-widget-container" id="widget-suporte-local">
+    <div class="support-widget-bubble" onclick="toggleSupportDrawer()">
+      <i data-lucide="help-circle" style="width:24px; height:24px;"></i>
+      <span class="support-widget-badge">1</span>
+    </div>
+    
+    <div class="support-widget-drawer" id="support-drawer">
+      <div class="support-drawer-header">
+        <div class="support-agent-avatar">XM</div>
+        <div>
+          <strong style="display:block; font-size:13px; font-family:'Outfit'">Apoio Técnico Fine ERP</strong>
+          <span style="font-size:11px; opacity:0.9;"><span class="support-agent-status"></span>Online (Maputo)</span>
+        </div>
+      </div>
+      
+      <div class="support-drawer-body">
+        <div class="support-message-bubble agent">
+          Olá! Sou o Moises, técnico de suporte do Fine ERP. Como posso ajudar a sua empresa hoje? Escolha uma opção rápida abaixo:
+        </div>
+        
+        <div class="support-options-list">
+          <button class="support-option-btn" onclick="acionarOpcaoSuporte('iva')">
+            <span>Dúvida sobre IVA & Guias Modelo 20</span>
+            <i data-lucide="chevron-right" style="width:14px;"></i>
+          </button>
+          <button class="support-option-btn" onclick="acionarOpcaoSuporte('mpesa')">
+            <span>Falha de Transação M-Pesa / e-Mola</span>
+            <i data-lucide="chevron-right" style="width:14px;"></i>
+          </button>
+          <button class="support-option-btn" onclick="acionarOpcaoSuporte('certificacao')">
+            <span>Homologação e Código QR da AT</span>
+            <i data-lucide="chevron-right" style="width:14px;"></i>
+          </button>
+          <button class="support-option-btn" onclick="acionarOpcaoSuporte('humano')">
+            <strong style="color:#22c55e;">Falar com Atendente Humano</strong>
+            <i data-lucide="message-square" style="width:14px; color:#22c55e;"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="support-drawer-footer">
+        <span style="color:var(--text-muted);">Tel Maputo: +258 84 069 4277</span>
+        <span style="color:var(--text-muted);">Beira: 87 779 6569</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "appId": "com.fineerp.cloud",
+  "appName": "Fine ERP Cloud",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
